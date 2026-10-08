@@ -1,6 +1,6 @@
 import string , math
 
-from lib.inverted_index import InvertedIndex
+from lib.inverted_index import BM25_B, BM25_K1, InvertedIndex
 
 from .search_utils import tokenize_term, tokenize_text , load_movies, preprocess_text ,  STOPWORDS , DEFAULT_SEARCH_LIMIT
 
@@ -49,3 +49,23 @@ def idf_command(term: str) -> float:
 
 def tfidf_command(doc_id:int , term:str) -> float:
     return tf_command(doc_id , term) * idf_command(term)
+
+def bm25_idf_command(term: str) -> float:
+    term = tokenize_term(term)
+    return index.get_bm25_idf(term)
+
+def bm25_tf_command(doc_id:int , term:str, k1:float = BM25_K1 , b:float = BM25_B) -> float:
+    term = tokenize_term(term)
+    return index.get_bm25_tf(doc_id , term , k1 , b)
+
+def bm25_search_command(query:str , limit:int = DEFAULT_SEARCH_LIMIT) -> list:
+    results = index.bm25_search(query , limit)
+    ## results = [ (doc_id , score) , ... ]
+    readable_results = []
+    for item in results:
+        res = []
+        res.append(index.docmap[item[0]])
+        res.append(item[1])
+        readable_results.append(res)
+    return readable_results
+    
