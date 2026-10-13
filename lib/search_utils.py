@@ -6,6 +6,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
 DATA_PATH = os.path.join(PROJECT_ROOT, "data", "movies.json")
 STOPWORDS_PATH = os.path.join(PROJECT_ROOT, "data", "stopwords.txt")
 DEFAULT_SEARCH_LIMIT = 5
+CACHE_DIR = PROJECT_ROOT + "/cache"
 
 from typing import Any , TypedDict
 from nltk.stem import PorterStemmer
