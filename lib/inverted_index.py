@@ -14,6 +14,7 @@ class InvertedIndex:
         self.term_frequencies = {} # doc Id -> Counter object
         self.doc_lengths = {}
         self.avg_doc_len = 0.0
+        self.index_path = CACHE_DIR + "/index.pkl"
 
     def __get_avg_doc_length(self) -> float:
         total_docs = len(self.docmap)
