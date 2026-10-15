@@ -5,7 +5,8 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from lib.hybrid_search import HybridSearch, minmax_normalize , DEFAULT_LIMIT ,DEFAULT_WEIGHTED_ALPHA , DEFAULT_K
 from lib.search_utils import load_movies
-
+from cli.llm import client , enhance_query
+from textwrap import dedent
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Hybrid Search CLI")
@@ -23,6 +24,9 @@ def main() -> None:
     rrf_search_parser.add_argument("query" , type=str)
     rrf_search_parser.add_argument("-k" , type=int , default= DEFAULT_K,help="RRF K Parameter (ranking control)")
     rrf_search_parser.add_argument("--limit" , type=int , default= DEFAULT_LIMIT)
+    rrf_search_parser.add_argument("--enhance" , type=str , choices=["spell","rewrite","expand"], help="Query enhancement using external LLM")
+
+    
     args = parser.parse_args()
 
     match args.command:
@@ -45,7 +49,11 @@ def main() -> None:
         case "rrf-search":
             movies = load_movies()
             hybrid_search = HybridSearch(movies)
-            results = hybrid_search.rrf_search(args.query , args.k ,args.limit)
+
+            ##LLM Query-enhancement
+            query = enhance_query(args.query , args.enhance)
+
+            results = hybrid_search.rrf_search(query , args.k ,args.limit)
 
             for i , res in enumerate(results,1):
                 print(f"""{i}. {res['title']}\n 
