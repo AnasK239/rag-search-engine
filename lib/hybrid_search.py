@@ -147,7 +147,7 @@ class HybridSearch:
                 "bm25_rank" : map['bm25_rank'],
                 "semantic_rank" : map['semantic_rank'],
                 "rrf_score" : round(float(map['rrf_score']) ,3),
-                "description" : map['doc']['description'][:100]
+                "description" : map['doc']['description']
             }
             return_res.append(res)
         
