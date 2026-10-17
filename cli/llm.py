@@ -195,7 +195,39 @@ def get_rerank_prompt(query:str , doc  , mode:str) -> str:
             
     return prompt
 
-         
+def llm_judge(results:list , query:str) -> list:
+    formatted = []
+    for i, item in enumerate(results,1):
+        formatted.append(f"{i}. {item['title']}: {item['description'][:150]}")
+
+    prompt = f"""Rate how relevant each result is to this query on a 0-3 scale:
+
+Query: "{query}"
+
+Results:
+{chr(10).join(formatted)}
+
+Scale:
+- 3: Highly relevant
+- 2: Relevant
+- 1: Marginally relevant
+- 0: Not relevant
+
+Do NOT give any numbers other than 0, 1, 2, or 3.
+
+Return ONLY the scores in the same order you were given the documents. Return a valid JSON list, nothing else. For example:
+
+[2, 0, 3, 2, 0, 1]"""
+
+    result = query_model(prompt)
+    try:
+        result = json.loads(result)
+    except:
+        print(f"Incorrect Json parsed")
+        return []
+
+    return result
+    
 # messages = [
 #     {
 #         "role": "user",

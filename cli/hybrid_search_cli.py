@@ -5,7 +5,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from lib.hybrid_search import HybridSearch, minmax_normalize , DEFAULT_LIMIT ,DEFAULT_WEIGHTED_ALPHA , DEFAULT_K
 from lib.search_utils import load_movies
-from cli.llm import client , batch_rerank_results , cross_encoder_rerank_results ,enhance_query , rerank_results
+from cli.llm import llm_judge , client , batch_rerank_results , cross_encoder_rerank_results ,enhance_query , rerank_results
 from textwrap import dedent
 
 def main() -> None:
@@ -26,7 +26,8 @@ def main() -> None:
     rrf_search_parser.add_argument("--limit" , type=int , default= DEFAULT_LIMIT)
     rrf_search_parser.add_argument("--enhance" , type=str , choices=["spell","rewrite","expand"], help="Query enhancement using external LLM")
     rrf_search_parser.add_argument("--rerank-method" , type=str , choices=["individual" , "batch" , "cross_encoder"])
-    
+    rrf_search_parser.add_argument("--evaluate" , action="store_true")
+
     args = parser.parse_args()
 
     match args.command:
@@ -58,35 +59,57 @@ def main() -> None:
                 new_limit = original_limit*5
 
             ##LLM Query-enhancement
+            original_query = args.query
             query = enhance_query(args.query , args.enhance)
             results = hybrid_search.rrf_search(query , args.k , new_limit)
 
 
             if rerank_method is not None and rerank_method.strip() != "":
-                print(f"""\
-                Re-ranking top {original_limit} results using {rerank_method} method...
-                Reciprocal Rank Fusion Results for '{query}' (k={args.k}):""")       
+                print(f"""\n\
+Re-ranking top {original_limit} results using {rerank_method} method...
+Reciprocal Rank Fusion Results for '{query}' (k={args.k}):\n""")       
 
-                match rerank_method:
-                    case "individual":
-                        results = rerank_results(query , results , rerank_method , original_limit)
-                        print_rerank_results(results)
-                        return
+                results = get_and_print_reranked_results(results , original_query , original_limit , rerank_method)
+                if args.evaluate:
+                    evaluate_and_print(results , original_query)
+                return
 
-                    case "batch":
-                        results = batch_rerank_results(query , results , rerank_method , original_limit)
-                        print_batch_rerank_results(results)
-                        return
-
-                    case "cross_encoder":
-                        results = cross_encoder_rerank_results(query , results , original_limit)
-                        print_cross_rerank_results(results)
-                        return
-            
             print_rrf(results)
+            if args.evaluate:
+                evaluate_and_print(results , original_query)
                 
         case _:
             parser.print_help()
+
+def evaluate_and_print(results:list , query:str):
+    scores = llm_judge(results , query)
+    if len(scores) != len(results):
+        print(f"Couldn't evalue incompatible sizes")
+        return
+    
+    for i,res in enumerate(results):
+        score = scores[i]
+        print(f"{i+1}. {res['title']}: {score}/3")
+        
+def get_and_print_reranked_results(results:list , original_query , original_limit ,rerank_method:str) -> list:
+    match rerank_method:
+        case "individual":
+            results = rerank_results(original_query , results , rerank_method , original_limit)
+            print_rerank_results(results)
+            return results
+
+        case "batch":
+            results = batch_rerank_results(original_query , results , rerank_method , original_limit)
+            print_batch_rerank_results(results)
+            return results
+
+        case "cross_encoder":
+            results = cross_encoder_rerank_results(original_query , results , original_limit)
+            print_cross_rerank_results(results)
+            return results
+        
+        case _:
+            return results
 
 def print_rerank_results(results:list):
     for i , res in enumerate(results,1):
